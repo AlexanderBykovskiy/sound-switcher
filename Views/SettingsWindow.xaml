@@ -1,0 +1,47 @@
+<Window x:Class="SoundSwitcher.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Sound Switcher - Настройки"
+        Height="420"
+        Width="560"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResizeWithGrip">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock FontSize="14"
+                   FontWeight="SemiBold"
+                   Text="Выберите устройства, которые будут участвовать в переключении" />
+
+        <ListView Grid.Row="1"
+                  Margin="0,12,0,12"
+                  ItemsSource="{Binding Devices}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay}"
+                              Content="{Binding Name}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Width="90"
+                    Margin="0,0,8,0"
+                    Click="OnCancelClicked"
+                    Content="Отмена" />
+            <Button Width="90"
+                    IsDefault="True"
+                    Click="OnSaveClicked"
+                    Content="Сохранить" />
+        </StackPanel>
+    </Grid>
+</Window>
