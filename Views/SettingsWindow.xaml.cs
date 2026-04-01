@@ -9,8 +9,36 @@ namespace SoundSwitcher.Views;
 public partial class SettingsWindow : Window
 {
     private readonly SettingsService _settingsService;
+    private string _selectedBackgroundShape = TrayIconKinds.BackgroundCrop11;
+    private string _backgroundColorHex = "#000000";
 
     public ObservableCollection<DeviceSelectionItem> Devices { get; }
+    public IReadOnlyList<KeyValuePair<string, string>> BackgroundOptions { get; } =
+    [
+        new(TrayIconKinds.BackgroundCrop11, "crop-1-1"),
+        new(TrayIconKinds.BackgroundSquareRounded, "square-rounded")
+    ];
+
+    public IReadOnlyList<KeyValuePair<string, string>> DeviceIconOptions { get; } =
+    [
+        new(TrayIconKinds.DeviceVolume, "volume"),
+        new(TrayIconKinds.DeviceAirpods, "device-airpods"),
+        new(TrayIconKinds.DeviceSpeaker, "device-speaker"),
+        new(TrayIconKinds.DeviceMusic, "music"),
+        new(TrayIconKinds.DeviceHeadphones, "headphones")
+    ];
+
+    public string SelectedBackgroundShape
+    {
+        get => _selectedBackgroundShape;
+        set => _selectedBackgroundShape = value;
+    }
+
+    public string BackgroundColorHex
+    {
+        get => _backgroundColorHex;
+        set => _backgroundColorHex = value;
+    }
 
     public SettingsWindow(
         IReadOnlyList<AudioDeviceInfo> allDevices,
@@ -21,13 +49,20 @@ public partial class SettingsWindow : Window
         _settingsService = settingsService;
 
         var selected = settings.IncludedDeviceIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var iconsByDevice = settings.DeviceIconById;
         Devices = new ObservableCollection<DeviceSelectionItem>(
             allDevices.Select(d => new DeviceSelectionItem
             {
                 Id = d.Id,
                 Name = d.Name,
-                IsIncluded = selected.Contains(d.Id)
+                IsIncluded = selected.Contains(d.Id),
+                IconKind = ResolveDeviceIcon(iconsByDevice, d.Id)
             }));
+
+        SelectedBackgroundShape = TrayIconKinds.BackgroundValues.Contains(settings.TrayBackgroundShape)
+            ? settings.TrayBackgroundShape
+            : TrayIconKinds.BackgroundCrop11;
+        BackgroundColorHex = NormalizeHexColor(settings.TrayBackgroundColorHex);
 
         DataContext = this;
     }
@@ -39,9 +74,19 @@ public partial class SettingsWindow : Window
             .Select(d => d.Id)
             .ToList();
 
+        var iconById = Devices.ToDictionary(
+            d => d.Id,
+            d => TrayIconKinds.DeviceValues.Contains(d.IconKind) ? d.IconKind : TrayIconKinds.DeviceVolume,
+            StringComparer.OrdinalIgnoreCase);
+
         _settingsService.Save(new AppSettings
         {
-            IncludedDeviceIds = selectedIds
+            IncludedDeviceIds = selectedIds,
+            TrayBackgroundShape = TrayIconKinds.BackgroundValues.Contains(SelectedBackgroundShape)
+                ? SelectedBackgroundShape
+                : TrayIconKinds.BackgroundCrop11,
+            TrayBackgroundColorHex = NormalizeHexColor(BackgroundColorHex),
+            DeviceIconById = iconById
         });
 
         DialogResult = true;
@@ -52,5 +97,48 @@ public partial class SettingsWindow : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private static string ResolveDeviceIcon(
+        IReadOnlyDictionary<string, string> iconsByDevice,
+        string deviceId)
+    {
+        if (!iconsByDevice.TryGetValue(deviceId, out var iconKind))
+        {
+            return TrayIconKinds.DeviceVolume;
+        }
+
+        return TrayIconKinds.DeviceValues.Contains(iconKind)
+            ? iconKind
+            : TrayIconKinds.DeviceVolume;
+    }
+
+    private static string NormalizeHexColor(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "#000000";
+        }
+
+        var normalized = value.Trim();
+        if (!normalized.StartsWith('#'))
+        {
+            normalized = $"#{normalized}";
+        }
+
+        if (normalized.Length != 7)
+        {
+            return "#000000";
+        }
+
+        for (var i = 1; i < normalized.Length; i++)
+        {
+            if (!Uri.IsHexDigit(normalized[i]))
+            {
+                return "#000000";
+            }
+        }
+
+        return normalized.ToUpperInvariant();
     }
 }

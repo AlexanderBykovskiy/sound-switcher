@@ -5,12 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Sound Switcher - Настройки"
-        Height="420"
-        Width="560"
+        Height="560"
+        Width="720"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip">
     <Grid Margin="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -18,20 +19,64 @@
 
         <TextBlock FontSize="14"
                    FontWeight="SemiBold"
-                   Text="Выберите устройства, которые будут участвовать в переключении" />
+                   Text="Настройки иконки трея и устройств" />
 
-        <ListView Grid.Row="1"
+        <Grid Grid.Row="1"
+              Margin="0,12,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="120" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock VerticalAlignment="Center"
+                       Text="Фон трея:" />
+            <ComboBox Grid.Column="1"
+                      Margin="8,0,0,0"
+                      ItemsSource="{Binding BackgroundOptions}"
+                      SelectedValuePath="Key"
+                      DisplayMemberPath="Value"
+                      SelectedValue="{Binding SelectedBackgroundShape, Mode=TwoWay}" />
+
+            <TextBlock Grid.Column="3"
+                       VerticalAlignment="Center"
+                       Text="Цвет (#RRGGBB):" />
+            <TextBox Grid.Column="4"
+                     Margin="8,0,0,0"
+                     VerticalAlignment="Center"
+                     Text="{Binding BackgroundColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <ListView Grid.Row="2"
                   Margin="0,12,0,12"
                   ItemsSource="{Binding Devices}">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay}"
-                              Content="{Binding Name}" />
+                    <Grid Margin="0,2,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="210" />
+                        </Grid.ColumnDefinitions>
+
+                        <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  Content="{Binding Name}" />
+
+                        <ComboBox Grid.Column="1"
+                                  Margin="8,0,0,0"
+                                  VerticalAlignment="Center"
+                                  ItemsSource="{Binding DataContext.DeviceIconOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                  SelectedValuePath="Key"
+                                  DisplayMemberPath="Value"
+                                  SelectedValue="{Binding IconKind, Mode=TwoWay}" />
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
 
-        <StackPanel Grid.Row="2"
+        <StackPanel Grid.Row="3"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
             <Button Width="90"

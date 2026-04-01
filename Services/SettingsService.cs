@@ -29,7 +29,18 @@ public sealed class SettingsService
             }
 
             var json = File.ReadAllText(_settingsPath);
-            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            return new AppSettings
+            {
+                IncludedDeviceIds = settings.IncludedDeviceIds ?? [],
+                TrayBackgroundShape = string.IsNullOrWhiteSpace(settings.TrayBackgroundShape)
+                    ? Models.TrayIconKinds.BackgroundCrop11
+                    : settings.TrayBackgroundShape,
+                TrayBackgroundColorHex = string.IsNullOrWhiteSpace(settings.TrayBackgroundColorHex)
+                    ? "#000000"
+                    : settings.TrayBackgroundColorHex,
+                DeviceIconById = settings.DeviceIconById ?? new(StringComparer.OrdinalIgnoreCase)
+            };
         }
         catch
         {

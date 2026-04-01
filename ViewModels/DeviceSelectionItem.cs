@@ -6,6 +6,7 @@ namespace SoundSwitcher.ViewModels;
 public sealed class DeviceSelectionItem : INotifyPropertyChanged
 {
     private bool _isIncluded;
+    private string _iconKind = Models.TrayIconKinds.DeviceVolume;
 
     public required string Id { get; init; }
     public required string Name { get; init; }
@@ -21,6 +22,21 @@ public sealed class DeviceSelectionItem : INotifyPropertyChanged
             }
 
             _isIncluded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string IconKind
+    {
+        get => _iconKind;
+        set
+        {
+            if (_iconKind == value)
+            {
+                return;
+            }
+
+            _iconKind = value;
             OnPropertyChanged();
         }
     }
