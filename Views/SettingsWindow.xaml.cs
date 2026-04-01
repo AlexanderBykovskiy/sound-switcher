@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using Forms = System.Windows.Forms;
 using SoundSwitcher.Models;
 using SoundSwitcher.Services;
@@ -7,7 +6,7 @@ using SoundSwitcher.ViewModels;
 
 namespace SoundSwitcher.Views;
 
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : System.Windows.Window
 {
     private readonly SettingsService _settingsService;
     private string _selectedBackgroundShape = TrayIconKinds.BackgroundCrop11;
@@ -68,7 +67,7 @@ public partial class SettingsWindow : Window
         DataContext = this;
     }
 
-    private void OnSaveClicked(object sender, RoutedEventArgs e)
+    private void OnSaveClicked(object sender, System.Windows.RoutedEventArgs e)
     {
         var selectedIds = Devices
             .Where(d => d.IsIncluded)
@@ -94,13 +93,13 @@ public partial class SettingsWindow : Window
         Close();
     }
 
-    private void OnCancelClicked(object sender, RoutedEventArgs e)
+    private void OnCancelClicked(object sender, System.Windows.RoutedEventArgs e)
     {
         DialogResult = false;
         Close();
     }
 
-    private void OnPickColorClicked(object sender, RoutedEventArgs e)
+    private void OnPickColorClicked(object sender, System.Windows.RoutedEventArgs e)
     {
         using var dialog = new Forms.ColorDialog
         {
@@ -164,4 +163,5 @@ public partial class SettingsWindow : Window
 
         return normalized.ToUpperInvariant();
     }
+
 }

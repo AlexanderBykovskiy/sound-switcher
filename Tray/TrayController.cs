@@ -13,20 +13,18 @@ public sealed class TrayController : IDisposable
     private readonly AudioDeviceService _audioDeviceService;
     private readonly SettingsService _settingsService;
     private readonly Forms.NotifyIcon _notifyIcon;
-    private readonly Forms.ContextMenuStrip _menu;
+    private TrayMenuWindow? _trayMenuWindow;
     private Icon? _trayIcon;
 
     public TrayController(AudioDeviceService audioDeviceService, SettingsService settingsService)
     {
         _audioDeviceService = audioDeviceService;
         _settingsService = settingsService;
-        _menu = BuildMenu();
         _notifyIcon = new Forms.NotifyIcon
         {
             Text = "Sound Switcher",
             Icon = CreateFallbackIcon(),
-            Visible = false,
-            ContextMenuStrip = _menu
+            Visible = false
         };
     }
 
@@ -43,16 +41,8 @@ public sealed class TrayController : IDisposable
         _notifyIcon.MouseClick -= OnNotifyIconClick;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
+        _trayMenuWindow?.Close();
         _trayIcon?.Dispose();
-        _menu.Dispose();
-    }
-
-    private Forms.ContextMenuStrip BuildMenu()
-    {
-        var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Settings", null, (_, _) => ShowSettingsWindow());
-        menu.Items.Add("Exit", null, (_, _) => System.Windows.Application.Current.Shutdown());
-        return menu;
     }
 
     private void OnNotifyIconClick(object? sender, Forms.MouseEventArgs e)
@@ -60,19 +50,81 @@ public sealed class TrayController : IDisposable
         if (e.Button == Forms.MouseButtons.Left)
         {
             SwitchToNextDevice();
+            return;
+        }
+
+        if (e.Button == Forms.MouseButtons.Right)
+        {
+            RunOnUiThread(ShowTrayMenu);
         }
     }
 
     private void ShowSettingsWindow()
     {
-        var devices = _audioDeviceService.GetOutputDevices();
-        var settings = _settingsService.Load();
-
-        var window = new SettingsWindow(devices, _settingsService, settings);
-        if (window.ShowDialog() == true)
+        RunOnUiThread(() =>
         {
-            UpdateTrayIconForCurrentDevice();
+            try
+            {
+                var devices = _audioDeviceService.GetOutputDevices();
+                var settings = _settingsService.Load();
+
+                var window = new SettingsWindow(devices, _settingsService, settings);
+                if (window.ShowDialog() == true)
+                {
+                    UpdateTrayIconForCurrentDevice();
+                }
+            }
+            catch (Exception ex)
+            {
+                StartupLogger.Error(ex, "Failed to open Settings window.");
+                System.Windows.MessageBox.Show(
+                    $"Failed to open Settings.{Environment.NewLine}{ex.Message}",
+                    "SoundSwitcher",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        });
+    }
+
+    private void ShowTrayMenu()
+    {
+        try
+        {
+            var cursor = Forms.Control.MousePosition;
+            var darkMode = ThemeService.IsDarkModeEnabled();
+
+            _trayMenuWindow?.Close();
+            _trayMenuWindow = new TrayMenuWindow(
+                settingsAction: ShowSettingsWindow,
+                exitAction: () => RunOnUiThread(() => System.Windows.Application.Current.Shutdown()),
+                darkMode: darkMode);
+
+            _trayMenuWindow.Show();
+            _trayMenuWindow.Left = Math.Max(0, cursor.X - _trayMenuWindow.ActualWidth + 4);
+            _trayMenuWindow.Top = Math.Max(0, cursor.Y - _trayMenuWindow.ActualHeight - 8);
+            _trayMenuWindow.Activate();
         }
+        catch (Exception ex)
+        {
+            StartupLogger.Error(ex, "Failed to open tray menu.");
+            System.Windows.MessageBox.Show(
+                $"Failed to open tray menu.{Environment.NewLine}{ex.Message}",
+                "SoundSwitcher",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    private static void RunOnUiThread(Action action)
+    {
+        var app = System.Windows.Application.Current;
+        if (app?.Dispatcher is null || app.Dispatcher.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        app.Dispatcher.Invoke(action);
     }
 
     private void SwitchToNextDevice()

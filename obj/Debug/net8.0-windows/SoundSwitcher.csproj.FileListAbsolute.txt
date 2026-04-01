@@ -18,3 +18,5 @@ D:\Develop\_bull-sheets\sound-switcher\obj\Debug\net8.0-windows\refint\SoundSwit
 D:\Develop\_bull-sheets\sound-switcher\obj\Debug\net8.0-windows\SoundSwitcher.pdb
 D:\Develop\_bull-sheets\sound-switcher\obj\Debug\net8.0-windows\SoundSwitcher.genruntimeconfig.cache
 D:\Develop\_bull-sheets\sound-switcher\obj\Debug\net8.0-windows\ref\SoundSwitcher.dll
+D:\Develop\_bull-sheets\sound-switcher\obj\Debug\net8.0-windows\Views\TrayMenuWindow.baml
+D:\Develop\_bull-sheets\sound-switcher\obj\Debug\net8.0-windows\Views\TrayMenuWindow.g.cs
