@@ -1,0 +1,36 @@
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+
+# .NET user-specific files
+*.user
+*.rsuser
+*.suo
+
+# IDE/editor folders
+.vs/
+.vscode/
+.idea/
+
+# Test and coverage artifacts
+TestResults/
+*.coverage
+*.coveragexml
+coverage/
+
+# NuGet and package artifacts
+*.nupkg
+*.snupkg
+packages/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+*.bak
+~$*
+
+# OS artifacts
+Thumbs.db
+Desktop.ini

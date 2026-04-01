@@ -15,15 +15,15 @@ public partial class SettingsWindow : System.Windows.Window
     public ObservableCollection<DeviceSelectionItem> Devices { get; }
     public IReadOnlyList<KeyValuePair<string, string>> BackgroundOptions { get; } =
     [
-        new(TrayIconKinds.BackgroundCrop11, "crop-1-1"),
+        new(TrayIconKinds.BackgroundCrop11, "square"),
         new(TrayIconKinds.BackgroundSquareRounded, "square-rounded")
     ];
 
     public IReadOnlyList<KeyValuePair<string, string>> DeviceIconOptions { get; } =
     [
         new(TrayIconKinds.DeviceVolume, "volume"),
-        new(TrayIconKinds.DeviceAirpods, "device-airpods"),
-        new(TrayIconKinds.DeviceSpeaker, "device-speaker"),
+        new(TrayIconKinds.DeviceAirpods, "airpods"),
+        new(TrayIconKinds.DeviceSpeaker, "speaker"),
         new(TrayIconKinds.DeviceMusic, "music"),
         new(TrayIconKinds.DeviceHeadphones, "headphones")
     ];

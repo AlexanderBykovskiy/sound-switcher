@@ -14,6 +14,7 @@ public sealed class TrayController : IDisposable
     private readonly SettingsService _settingsService;
     private readonly Forms.NotifyIcon _notifyIcon;
     private TrayMenuWindow? _trayMenuWindow;
+    private SettingsWindow? _settingsWindow;
     private Icon? _trayIcon;
 
     public TrayController(AudioDeviceService audioDeviceService, SettingsService settingsService)
@@ -33,7 +34,6 @@ public sealed class TrayController : IDisposable
         _notifyIcon.MouseClick += OnNotifyIconClick;
         UpdateTrayIconForCurrentDevice();
         _notifyIcon.Visible = true;
-        ShowBalloon("Sound Switcher", "Application started.");
     }
 
     public void Dispose()
@@ -65,11 +65,29 @@ public sealed class TrayController : IDisposable
         {
             try
             {
+                if (_settingsWindow is not null)
+                {
+                    if (_settingsWindow.WindowState == System.Windows.WindowState.Minimized)
+                    {
+                        _settingsWindow.WindowState = System.Windows.WindowState.Normal;
+                    }
+
+                    _settingsWindow.Activate();
+                    _settingsWindow.Focus();
+                    return;
+                }
+
                 var devices = _audioDeviceService.GetOutputDevices();
                 var settings = _settingsService.Load();
 
-                var window = new SettingsWindow(devices, _settingsService, settings);
-                if (window.ShowDialog() == true)
+                _settingsWindow = new SettingsWindow(devices, _settingsService, settings)
+                {
+                    Topmost = true
+                };
+                _settingsWindow.Closed += OnSettingsWindowClosed;
+
+                var saved = _settingsWindow.ShowDialog() == true;
+                if (saved)
                 {
                     UpdateTrayIconForCurrentDevice();
                 }
@@ -84,6 +102,17 @@ public sealed class TrayController : IDisposable
                     System.Windows.MessageBoxImage.Error);
             }
         });
+    }
+
+    private void OnSettingsWindowClosed(object? sender, EventArgs e)
+    {
+        if (_settingsWindow is null)
+        {
+            return;
+        }
+
+        _settingsWindow.Closed -= OnSettingsWindowClosed;
+        _settingsWindow = null;
     }
 
     private void ShowTrayMenu()
@@ -241,8 +270,8 @@ public sealed class TrayController : IDisposable
 
     private static GraphicsPath CreateBackgroundPath(string backgroundKind)
     {
-        var radius = backgroundKind == TrayIconKinds.BackgroundSquareRounded ? 9 : 6;
-        return CreateRoundedRectPath(new Rectangle(3, 3, 26, 26), radius);
+        var radius = backgroundKind == TrayIconKinds.BackgroundSquareRounded ? 10 : 8;
+        return CreateRoundedRectPath(new Rectangle(0, 0, 32, 32), radius);
     }
 
     private static GraphicsPath CreateRoundedRectPath(Rectangle rect, int radius)
@@ -260,23 +289,36 @@ public sealed class TrayController : IDisposable
 
     private static void DrawDeviceIcon(Graphics graphics, string iconKind, Pen pen)
     {
-        switch (iconKind)
+        var iconScale = iconKind == TrayIconKinds.DeviceHeadphones ? 1.12f : 1.2f;
+        var state = graphics.Save();
+        graphics.TranslateTransform(16f, 16f);
+        graphics.ScaleTransform(iconScale, iconScale);
+        graphics.TranslateTransform(-16f, -16f);
+
+        try
         {
-            case TrayIconKinds.DeviceAirpods:
-                DrawAirpodsIcon(graphics, pen);
-                break;
-            case TrayIconKinds.DeviceSpeaker:
-                DrawSpeakerIcon(graphics, pen);
-                break;
-            case TrayIconKinds.DeviceMusic:
-                DrawMusicIcon(graphics, pen);
-                break;
-            case TrayIconKinds.DeviceHeadphones:
-                DrawHeadphonesIcon(graphics, pen);
-                break;
-            default:
-                DrawVolumeIcon(graphics, pen);
-                break;
+            switch (iconKind)
+            {
+                case TrayIconKinds.DeviceAirpods:
+                    DrawAirpodsIcon(graphics, pen);
+                    break;
+                case TrayIconKinds.DeviceSpeaker:
+                    DrawSpeakerIcon(graphics, pen);
+                    break;
+                case TrayIconKinds.DeviceMusic:
+                    DrawMusicIcon(graphics, pen);
+                    break;
+                case TrayIconKinds.DeviceHeadphones:
+                    DrawHeadphonesIcon(graphics, pen);
+                    break;
+                default:
+                    DrawVolumeIcon(graphics, pen);
+                    break;
+            }
+        }
+        finally
+        {
+            graphics.Restore(state);
         }
     }
 
