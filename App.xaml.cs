@@ -25,7 +25,7 @@ public partial class App : System.Windows.Application
         {
             StartupLogger.Error(ex, "Unhandled startup exception.");
             System.Windows.MessageBox.Show(
-                $"Ошибка запуска SoundSwitcher:{Environment.NewLine}{ex.Message}",
+                $"SoundSwitcher startup error:{Environment.NewLine}{ex.Message}",
                 "SoundSwitcher",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);

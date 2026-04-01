@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Sound Switcher - Настройки"
+        Title="Sound Switcher - Settings"
         Height="560"
         Width="720"
         WindowStartupLocation="CenterScreen"
@@ -19,7 +19,7 @@
 
         <TextBlock FontSize="14"
                    FontWeight="SemiBold"
-                   Text="Настройки иконки трея и устройств" />
+                   Text="Tray icon and device settings" />
 
         <Grid Grid.Row="1"
               Margin="0,12,0,8">
@@ -33,7 +33,7 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock VerticalAlignment="Center"
-                       Text="Фон трея:" />
+                       Text="Tray background:" />
             <ComboBox Grid.Column="1"
                       Margin="8,0,0,0"
                       ItemsSource="{Binding BackgroundOptions}"
@@ -43,7 +43,7 @@
 
             <TextBlock Grid.Column="3"
                        VerticalAlignment="Center"
-                       Text="Цвет (#RRGGBB):" />
+                       Text="Color (#RRGGBB):" />
             <TextBox Grid.Column="4"
                      x:Name="ColorHexTextBox"
                      Margin="8,0,0,0"
@@ -90,11 +90,11 @@
             <Button Width="90"
                     Margin="0,0,8,0"
                     Click="OnCancelClicked"
-                    Content="Отмена" />
+                    Content="Cancel" />
             <Button Width="90"
                     IsDefault="True"
                     Click="OnSaveClicked"
-                    Content="Сохранить" />
+                    Content="Save" />
         </StackPanel>
     </Grid>
 </Window>

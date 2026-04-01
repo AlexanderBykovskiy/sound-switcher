@@ -35,7 +35,7 @@ public sealed class TrayController : IDisposable
         _notifyIcon.MouseClick += OnNotifyIconClick;
         UpdateTrayIconForCurrentDevice();
         _notifyIcon.Visible = true;
-        ShowBalloon("Sound Switcher", "Приложение запущено.");
+        ShowBalloon("Sound Switcher", "Application started.");
     }
 
     public void Dispose()
@@ -50,8 +50,8 @@ public sealed class TrayController : IDisposable
     private Forms.ContextMenuStrip BuildMenu()
     {
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Настройки", null, (_, _) => ShowSettingsWindow());
-        menu.Items.Add("Выход", null, (_, _) => System.Windows.Application.Current.Shutdown());
+        menu.Items.Add("Settings", null, (_, _) => ShowSettingsWindow());
+        menu.Items.Add("Exit", null, (_, _) => System.Windows.Application.Current.Shutdown());
         return menu;
     }
 
@@ -80,7 +80,7 @@ public sealed class TrayController : IDisposable
         var devices = _audioDeviceService.GetOutputDevices();
         if (devices.Count == 0)
         {
-            ShowBalloon("Sound Switcher", "Не найдено активных устройств вывода.");
+            ShowBalloon("Sound Switcher", "No active output devices found.");
             return;
         }
 
@@ -93,7 +93,7 @@ public sealed class TrayController : IDisposable
 
         if (rotation.Count == 0)
         {
-            ShowBalloon("Sound Switcher", "В настройках не выбраны доступные устройства.");
+            ShowBalloon("Sound Switcher", "No available devices selected in settings.");
             return;
         }
 
@@ -104,7 +104,7 @@ public sealed class TrayController : IDisposable
 
         _audioDeviceService.SetDefaultOutputDevice(next.Id);
         UpdateTrayIcon(next.Id);
-        ShowBalloon("Sound Switcher", $"Текущее устройство: {next.Name}");
+        ShowBalloon("Sound Switcher", $"Current device: {next.Name}");
     }
 
     private void ShowBalloon(string title, string text)
