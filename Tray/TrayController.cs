@@ -104,7 +104,6 @@ public sealed class TrayController : IDisposable
 
         _audioDeviceService.SetDefaultOutputDevice(next.Id);
         UpdateTrayIcon(next.Id);
-        ShowBalloon("Sound Switcher", $"Current device: {next.Name}");
     }
 
     private void ShowBalloon(string title, string text)
