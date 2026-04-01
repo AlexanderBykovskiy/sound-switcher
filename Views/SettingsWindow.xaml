@@ -29,6 +29,7 @@
                 <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="120" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <TextBlock VerticalAlignment="Center"
@@ -44,9 +45,16 @@
                        VerticalAlignment="Center"
                        Text="Цвет (#RRGGBB):" />
             <TextBox Grid.Column="4"
+                     x:Name="ColorHexTextBox"
                      Margin="8,0,0,0"
                      VerticalAlignment="Center"
                      Text="{Binding BackgroundColorHex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Column="5"
+                    Margin="8,0,0,0"
+                    Width="30"
+                    VerticalAlignment="Center"
+                    Click="OnPickColorClicked"
+                    Content="..." />
         </Grid>
 
         <ListView Grid.Row="2"

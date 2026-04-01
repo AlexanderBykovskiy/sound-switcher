@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using Forms = System.Windows.Forms;
 using SoundSwitcher.Models;
 using SoundSwitcher.Services;
 using SoundSwitcher.ViewModels;
@@ -97,6 +98,28 @@ public partial class SettingsWindow : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void OnPickColorClicked(object sender, RoutedEventArgs e)
+    {
+        using var dialog = new Forms.ColorDialog
+        {
+            FullOpen = true,
+            AnyColor = true,
+            SolidColorOnly = false
+        };
+
+        var initial = NormalizeHexColor(BackgroundColorHex);
+        dialog.Color = System.Drawing.ColorTranslator.FromHtml(initial);
+
+        if (dialog.ShowDialog() != Forms.DialogResult.OK)
+        {
+            return;
+        }
+
+        var hex = $"#{dialog.Color.R:X2}{dialog.Color.G:X2}{dialog.Color.B:X2}";
+        BackgroundColorHex = hex;
+        ColorHexTextBox.Text = hex;
     }
 
     private static string ResolveDeviceIcon(
