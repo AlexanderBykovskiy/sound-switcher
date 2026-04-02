@@ -25,7 +25,21 @@ public static class DeviceIconCatalog
         "turntable.png"
     ];
 
-    public static string MigrateLegacyKey(string? key)
+    /// <summary>Иконка для устройства из сохранённого словаря (пустой/неизвестный id → дефолт).</summary>
+    public static string ResolveIconForDevice(
+        IReadOnlyDictionary<string, string> deviceIconById,
+        string? deviceId)
+    {
+        if (string.IsNullOrWhiteSpace(deviceId) ||
+            !deviceIconById.TryGetValue(deviceId, out var iconKind))
+        {
+            return DefaultIconFileName;
+        }
+
+        return NormalizeStoredKey(iconKind);
+    }
+
+    private static string MigrateLegacyKey(string? key)
     {
         if (string.IsNullOrWhiteSpace(key))
         {

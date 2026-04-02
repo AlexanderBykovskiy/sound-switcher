@@ -27,6 +27,7 @@ public sealed class TrayController : IDisposable
     {
         _audioDeviceService = audioDeviceService;
         _settingsService = settingsService;
+        _audioDeviceService.DevicesChanged += OnAudioDevicesChanged;
         _notifyIcon = new Forms.NotifyIcon
         {
             Text = "Sound Switcher",
@@ -34,6 +35,9 @@ public sealed class TrayController : IDisposable
             Visible = false
         };
     }
+
+    private void OnAudioDevicesChanged(object? sender, EventArgs e) =>
+        RunOnUiThread(UpdateTrayIconForCurrentDevice);
 
     public void Initialize()
     {
@@ -44,11 +48,13 @@ public sealed class TrayController : IDisposable
 
     public void Dispose()
     {
+        _audioDeviceService.DevicesChanged -= OnAudioDevicesChanged;
         _notifyIcon.MouseClick -= OnNotifyIconClick;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
         _trayMenuWindow?.Close();
         _trayIcon?.Dispose();
+        _audioDeviceService.Dispose();
     }
 
     private void OnNotifyIconClick(object? sender, Forms.MouseEventArgs e)
@@ -216,20 +222,8 @@ public sealed class TrayController : IDisposable
         _notifyIcon.Icon = _trayIcon;
     }
 
-    private static string ResolveDeviceIcon(AppSettings settings, string? deviceId)
-    {
-        if (string.IsNullOrWhiteSpace(deviceId))
-        {
-            return DeviceIconCatalog.DefaultIconFileName;
-        }
-
-        if (!settings.DeviceIconById.TryGetValue(deviceId, out var iconKind))
-        {
-            return DeviceIconCatalog.DefaultIconFileName;
-        }
-
-        return DeviceIconCatalog.NormalizeStoredKey(iconKind);
-    }
+    private static string ResolveDeviceIcon(AppSettings settings, string? deviceId) =>
+        DeviceIconCatalog.ResolveIconForDevice(settings.DeviceIconById, deviceId);
 
     private static Icon CreateFallbackIcon() =>
         CreateTrayIcon(DeviceIconCatalog.DefaultIconFileName);
@@ -288,8 +282,9 @@ public sealed class TrayController : IDisposable
                 image,
                 new RectangleF(0f, 0f, TrayIconSizePx, TrayIconSizePx));
         }
-        catch
+        catch (Exception ex)
         {
+            StartupLogger.Error(ex, $"Tray icon: failed to draw device PNG ({iconKind}).");
             if (!string.Equals(iconKind, DeviceIconCatalog.DefaultIconFileName, StringComparison.OrdinalIgnoreCase))
             {
                 DrawDeviceIcon(graphics, DeviceIconCatalog.DefaultIconFileName);

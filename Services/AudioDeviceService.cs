@@ -3,60 +3,196 @@ using SoundSwitcher.Models;
 
 namespace SoundSwitcher.Services;
 
-public sealed class AudioDeviceService
+public sealed class AudioDeviceService : IDisposable
 {
+    private readonly IMMDeviceEnumerator _enumerator;
+    private readonly AudioEndpointNotificationClient _notificationClient;
+    private bool _disposed;
+
+    public event EventHandler? DevicesChanged;
+
+    public AudioDeviceService()
+    {
+        _enumerator = new MMDeviceEnumeratorComObject() as IMMDeviceEnumerator
+            ?? throw new InvalidOperationException("MMDeviceEnumerator is unavailable.");
+        _notificationClient = new AudioEndpointNotificationClient(OnAudioNotification);
+        try
+        {
+            var hr = _enumerator.RegisterEndpointNotificationCallback(_notificationClient);
+            if (hr != 0)
+            {
+                Marshal.ThrowExceptionForHR(hr);
+            }
+        }
+        catch
+        {
+            _ = Marshal.ReleaseComObject(_enumerator);
+            throw;
+        }
+    }
+
     public IReadOnlyList<AudioDeviceInfo> GetOutputDevices()
     {
-        var enumerator = new MMDeviceEnumeratorComObject() as IMMDeviceEnumerator
-            ?? throw new InvalidOperationException("MMDeviceEnumerator is unavailable.");
-        enumerator.EnumAudioEndpoints(EDataFlow.eRender, DeviceState.Active, out var collection);
-        collection.GetCount(out var count);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var result = new List<AudioDeviceInfo>((int)count);
-        for (uint i = 0; i < count; i++)
+        IMMDeviceCollection? collection = null;
+        try
         {
-            collection.Item(i, out var device);
-            device.GetId(out var id);
-            result.Add(new AudioDeviceInfo
+            var hr = _enumerator.EnumAudioEndpoints(EDataFlow.eRender, DeviceState.Active, out collection);
+            if (hr != 0)
             {
-                Id = id,
-                Name = GetFriendlyName(device)
-            });
-        }
+                Marshal.ThrowExceptionForHR(hr);
+            }
 
-        return result;
+            ArgumentNullException.ThrowIfNull(collection);
+            var endpoints = collection;
+            endpoints.GetCount(out var count);
+            var result = new List<AudioDeviceInfo>((int)count);
+            for (uint i = 0; i < count; i++)
+            {
+                IMMDevice? device = null;
+                try
+                {
+                    hr = endpoints.Item(i, out device);
+                    if (hr != 0)
+                    {
+                        Marshal.ThrowExceptionForHR(hr);
+                    }
+
+                    ArgumentNullException.ThrowIfNull(device);
+                    var endpoint = device;
+                    endpoint.GetId(out var id);
+                    result.Add(new AudioDeviceInfo
+                    {
+                        Id = id,
+                        Name = GetFriendlyName(endpoint)
+                    });
+                }
+                finally
+                {
+                    if (device is not null)
+                    {
+                        _ = Marshal.ReleaseComObject(device);
+                    }
+                }
+            }
+
+            return result;
+        }
+        finally
+        {
+            if (collection is not null)
+            {
+                _ = Marshal.ReleaseComObject(collection);
+            }
+        }
     }
 
     public string? GetDefaultOutputDeviceId()
     {
-        var enumerator = new MMDeviceEnumeratorComObject() as IMMDeviceEnumerator
-            ?? throw new InvalidOperationException("MMDeviceEnumerator is unavailable.");
-        enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out var device);
-        device.GetId(out var id);
-        return id;
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        IMMDevice? device = null;
+        try
+        {
+            var hr = _enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia, out device);
+            if (hr != 0)
+            {
+                Marshal.ThrowExceptionForHR(hr);
+            }
+
+            ArgumentNullException.ThrowIfNull(device);
+            var defaultDevice = device;
+            defaultDevice.GetId(out var id);
+            return id;
+        }
+        finally
+        {
+            if (device is not null)
+            {
+                _ = Marshal.ReleaseComObject(device);
+            }
+        }
     }
 
     public void SetDefaultOutputDevice(string deviceId)
     {
-        var policyConfig = new PolicyConfigClientComObject() as IPolicyConfig
-            ?? throw new InvalidOperationException("PolicyConfig is unavailable.");
-        policyConfig.SetDefaultEndpoint(deviceId, ERole.eConsole);
-        policyConfig.SetDefaultEndpoint(deviceId, ERole.eMultimedia);
-        policyConfig.SetDefaultEndpoint(deviceId, ERole.eCommunications);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var comPolicy = new PolicyConfigClientComObject();
+        var policy = (IPolicyConfig)comPolicy;
+        try
+        {
+            policy.SetDefaultEndpoint(deviceId, ERole.eConsole);
+            policy.SetDefaultEndpoint(deviceId, ERole.eMultimedia);
+            policy.SetDefaultEndpoint(deviceId, ERole.eCommunications);
+        }
+        finally
+        {
+            _ = Marshal.ReleaseComObject(comPolicy);
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
+        try
+        {
+            _ = _enumerator.UnregisterEndpointNotificationCallback(_notificationClient);
+        }
+        catch (Exception ex)
+        {
+            StartupLogger.Error(ex, "Unregister audio endpoint notification callback failed.");
+        }
+
+        _ = Marshal.ReleaseComObject(_enumerator);
+
+        GC.SuppressFinalize(this);
+    }
+
+    private void OnAudioNotification()
+    {
+        DevicesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private static string GetFriendlyName(IMMDevice device)
     {
-        device.OpenPropertyStore(StorageAccessMode.Read, out var store);
-        var key = PropertyKeys.PKEY_Device_FriendlyName;
-        store.GetValue(ref key, out var value);
+        IPropertyStore? store = null;
+        var hr = device.OpenPropertyStore(StorageAccessMode.Read, out store);
+        if (hr != 0)
+        {
+            Marshal.ThrowExceptionForHR(hr);
+        }
+
+        ArgumentNullException.ThrowIfNull(store);
+        var props = store;
         try
         {
-            return value.GetValue() ?? "Unknown output device";
+            var key = PropertyKeys.PKEY_Device_FriendlyName;
+            hr = props.GetValue(ref key, out var value);
+            if (hr != 0)
+            {
+                Marshal.ThrowExceptionForHR(hr);
+            }
+
+            try
+            {
+                return value.GetValue() ?? "Unknown output device";
+            }
+            finally
+            {
+                value.Clear();
+            }
         }
         finally
         {
-            value.Clear();
+            _ = Marshal.ReleaseComObject(props);
         }
     }
 
@@ -67,6 +203,53 @@ public sealed class AudioDeviceService
     [ComImport]
     [Guid("870af99c-171d-4f9e-af0d-e63df40c2bc9")]
     private class PolicyConfigClientComObject;
+}
+
+/// <summary>
+/// Колбэки MMDevice не должны блокироваться; поднимаем событие в пуле потоков.
+/// </summary>
+internal sealed class AudioEndpointNotificationClient : IMMNotificationClient
+{
+    private readonly Action _onChange;
+
+    public AudioEndpointNotificationClient(Action onChange) => _onChange = onChange;
+
+    public int OnDeviceStateChanged(string pwstrDeviceId, uint dwNewState) => NotifyLater();
+
+    public int OnDeviceAdded(string pwstrDeviceId) => NotifyLater();
+
+    public int OnDeviceRemoved(string pwstrDeviceId) => NotifyLater();
+
+    public int OnDefaultDeviceChanged(EDataFlow flow, ERole role, string? pwstrDefaultDeviceId) => NotifyLater();
+
+    public int OnPropertyValueChanged(string pwstrDeviceId, ref PropertyKey key) => NotifyLater();
+
+    private int NotifyLater()
+    {
+        ThreadPool.QueueUserWorkItem(static state => ((Action)state!).Invoke(), _onChange);
+        return 0;
+    }
+}
+
+[ComImport]
+[Guid("7991ECE9-7E31-456D-9F27-948390F03E28")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IMMNotificationClient
+{
+    [PreserveSig]
+    int OnDeviceStateChanged([MarshalAs(UnmanagedType.LPWStr)] string pwstrDeviceId, uint dwNewState);
+
+    [PreserveSig]
+    int OnDeviceAdded([MarshalAs(UnmanagedType.LPWStr)] string pwstrDeviceId);
+
+    [PreserveSig]
+    int OnDeviceRemoved([MarshalAs(UnmanagedType.LPWStr)] string pwstrDeviceId);
+
+    [PreserveSig]
+    int OnDefaultDeviceChanged(EDataFlow flow, ERole role, [MarshalAs(UnmanagedType.LPWStr)] string? pwstrDefaultDeviceId);
+
+    [PreserveSig]
+    int OnPropertyValueChanged([MarshalAs(UnmanagedType.LPWStr)] string pwstrDeviceId, ref PropertyKey key);
 }
 
 internal static class PropertyKeys
@@ -102,11 +285,20 @@ internal struct PropVariant
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMMDeviceEnumerator
 {
-    int EnumAudioEndpoints(EDataFlow dataFlow, DeviceState stateMask, out IMMDeviceCollection devices);
-    int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice endpoint);
-    int GetDevice(string pwstrId, out IMMDevice device);
-    int RegisterEndpointNotificationCallback(IntPtr client);
-    int UnregisterEndpointNotificationCallback(IntPtr client);
+    [PreserveSig]
+    int EnumAudioEndpoints(EDataFlow dataFlow, DeviceState stateMask, out IMMDeviceCollection? devices);
+
+    [PreserveSig]
+    int GetDefaultAudioEndpoint(EDataFlow dataFlow, ERole role, out IMMDevice? endpoint);
+
+    [PreserveSig]
+    int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string pwstrId, out IMMDevice? device);
+
+    [PreserveSig]
+    int RegisterEndpointNotificationCallback(IMMNotificationClient client);
+
+    [PreserveSig]
+    int UnregisterEndpointNotificationCallback(IMMNotificationClient client);
 }
 
 [ComImport]
@@ -114,8 +306,11 @@ internal interface IMMDeviceEnumerator
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMMDeviceCollection
 {
+    [PreserveSig]
     int GetCount(out uint count);
-    int Item(uint nDevice, out IMMDevice device);
+
+    [PreserveSig]
+    int Item(uint nDevice, out IMMDevice? device);
 }
 
 [ComImport]
@@ -123,9 +318,16 @@ internal interface IMMDeviceCollection
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMMDevice
 {
+    [PreserveSig]
     int Activate(ref Guid iid, int dwClsCtx, IntPtr activationParams, out object interfacePointer);
-    int OpenPropertyStore(StorageAccessMode stgmAccess, out IPropertyStore properties);
+
+    [PreserveSig]
+    int OpenPropertyStore(StorageAccessMode stgmAccess, out IPropertyStore? properties);
+
+    [PreserveSig]
     int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
+
+    [PreserveSig]
     int GetState(out DeviceState state);
 }
 
@@ -134,10 +336,19 @@ internal interface IMMDevice
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IPropertyStore
 {
+    [PreserveSig]
     int GetCount(out int propertyCount);
+
+    [PreserveSig]
     int GetAt(int propertyIndex, out PropertyKey key);
+
+    [PreserveSig]
     int GetValue(ref PropertyKey key, out PropVariant value);
+
+    [PreserveSig]
     int SetValue(ref PropertyKey key, ref PropVariant value);
+
+    [PreserveSig]
     int Commit();
 }
 

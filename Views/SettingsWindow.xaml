@@ -7,7 +7,7 @@
         Title="Sound Switcher - Settings"
         Icon="pack://application:,,,/Assets/app-icon.png"
         Height="300"
-        Width="620"
+        Width="670"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip">
     <Grid Margin="12">
@@ -21,51 +21,83 @@
                    FontWeight="SemiBold"
                    Text="Tray icon and device settings" />
 
-        <ListView Grid.Row="1"
+        <ListView x:Name="DeviceListView"
+                  Grid.Row="1"
                   Margin="0,12,0,12"
-                  ItemsSource="{Binding Devices}">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="0,2,0,2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="320" />
-                        </Grid.ColumnDefinitions>
-
-                        <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay}"
-                                  VerticalAlignment="Center"
-                                  Content="{Binding Name}" />
-
-                        <ComboBox Grid.Column="1"
-                                  MinWidth="300"
-                                  Margin="8,0,0,0"
-                                  VerticalAlignment="Center"
-                                  ItemsSource="{Binding DataContext.DeviceIconOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                  SelectedValuePath="Key"
-                                  SelectedValue="{Binding IconKind, Mode=TwoWay}">
-                            <ComboBox.Resources>
-                                <Style TargetType="ComboBoxItem">
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                </Style>
-                            </ComboBox.Resources>
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Image Width="22"
-                                               Height="22"
-                                               Margin="0,0,8,0"
-                                               VerticalAlignment="Center"
-                                               RenderOptions.BitmapScalingMode="HighQuality"
-                                               Source="{Binding Preview}" />
-                                        <TextBlock VerticalAlignment="Center"
-                                                   Text="{Binding Label}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
+                  ItemsSource="{Binding Devices}"
+                  SizeChanged="DeviceListView_OnSizeChanged"
+                  Loaded="DeviceListView_OnLoaded">
+            <ListView.Resources>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="4,2" />
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                </Style>
+            </ListView.Resources>
+            <ListView.View>
+                <GridView AllowsColumnReorder="False">
+                    <GridViewColumn Width="36">
+                        <GridViewColumn.Header>
+                            <TextBlock Text=" " />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="320">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="Output device" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"
+                                           ToolTip="{Binding Name}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn>
+                        <GridViewColumn.Header>
+                            <TextBlock Text="Tray icon" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox MinWidth="220"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          ItemsSource="{Binding DataContext.DeviceIconOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          SelectedValuePath="Key"
+                                          SelectedValue="{Binding IconKind, Mode=TwoWay}">
+                                    <ComboBox.Resources>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        </Style>
+                                    </ComboBox.Resources>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Width="22"
+                                                       Height="22"
+                                                       Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                                       Source="{Binding Preview}" />
+                                                <TextBlock VerticalAlignment="Center"
+                                                           Text="{Binding Label}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
         </ListView>
 
         <StackPanel Grid.Row="2"

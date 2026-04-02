@@ -36,8 +36,9 @@ public sealed class SettingsService
                 DeviceIconById = settings.DeviceIconById ?? new(StringComparer.OrdinalIgnoreCase)
             };
         }
-        catch
+        catch (Exception ex)
         {
+            StartupLogger.Error(ex, "Failed to load settings; using defaults.");
             return new AppSettings();
         }
     }

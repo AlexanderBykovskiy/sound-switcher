@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
 using SoundSwitcher.Models;
 using SoundSwitcher.Services;
 using SoundSwitcher.ViewModels;
@@ -7,6 +9,10 @@ namespace SoundSwitcher.Views;
 
 public partial class SettingsWindow : System.Windows.Window
 {
+    private const double MinTrayIconColumnWidth = 240;
+
+    private bool _updatingListViewColumns;
+
     private readonly SettingsService _settingsService;
 
     public ObservableCollection<DeviceSelectionItem> Devices { get; }
@@ -37,13 +43,76 @@ public partial class SettingsWindow : System.Windows.Window
                 Id = d.Id,
                 Name = d.Name,
                 IsIncluded = selected.Contains(d.Id),
-                IconKind = ResolveDeviceIcon(iconsByDevice, d.Id)
+                IconKind = DeviceIconCatalog.ResolveIconForDevice(iconsByDevice, d.Id)
             }));
 
         DataContext = this;
     }
 
-    private void OnSaveClicked(object sender, System.Windows.RoutedEventArgs e)
+    private void DeviceListView_OnLoaded(object sender, RoutedEventArgs e) =>
+        UpdateListViewColumnWidths();
+
+    private void DeviceListView_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.WidthChanged)
+        {
+            UpdateListViewColumnWidths();
+        }
+    }
+
+    /// <summary>
+    /// GridView не даёт «*» для колонки: колонка иконки — авто по содержимому, имя устройства — остаток ширины.
+    /// </summary>
+    private void UpdateListViewColumnWidths()
+    {
+        if (_updatingListViewColumns || !DeviceListView.IsLoaded ||
+            DeviceListView.ActualWidth <= 0 ||
+            DeviceListView.View is not GridView gridView ||
+            gridView.Columns.Count < 3)
+        {
+            return;
+        }
+
+        _updatingListViewColumns = true;
+        try
+        {
+            var checkboxCol = gridView.Columns[0];
+            var deviceCol = gridView.Columns[1];
+            var iconCol = gridView.Columns[2];
+
+            iconCol.Width = double.NaN;
+            DeviceListView.UpdateLayout();
+
+            const double gridChrome = 12;
+            var scrollReserve = SystemParameters.VerticalScrollBarWidth;
+            var listWidth = DeviceListView.ActualWidth;
+
+            var checkboxW = checkboxCol.ActualWidth > 0
+                ? checkboxCol.ActualWidth
+                : (double.IsNaN(checkboxCol.Width) || checkboxCol.Width <= 0 ? 36 : checkboxCol.Width);
+
+            var iconNatural = iconCol.ActualWidth > 0 ? iconCol.ActualWidth : MinTrayIconColumnWidth;
+            var iconW = Math.Max(iconNatural, MinTrayIconColumnWidth);
+            iconCol.Width = iconW;
+
+            var deviceWidth = listWidth - scrollReserve - gridChrome - checkboxW - iconW;
+            if (deviceWidth < 120)
+            {
+                deviceWidth = 120;
+            }
+
+            if (double.IsNaN(deviceCol.Width) || Math.Abs(deviceCol.Width - deviceWidth) > 0.5)
+            {
+                deviceCol.Width = deviceWidth;
+            }
+        }
+        finally
+        {
+            _updatingListViewColumns = false;
+        }
+    }
+
+    private void OnSaveClicked(object sender, RoutedEventArgs e)
     {
         var selectedIds = Devices
             .Where(d => d.IsIncluded)
@@ -65,22 +134,10 @@ public partial class SettingsWindow : System.Windows.Window
         Close();
     }
 
-    private void OnCancelClicked(object sender, System.Windows.RoutedEventArgs e)
+    private void OnCancelClicked(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
         Close();
-    }
-
-    private static string ResolveDeviceIcon(
-        IReadOnlyDictionary<string, string> iconsByDevice,
-        string deviceId)
-    {
-        if (!iconsByDevice.TryGetValue(deviceId, out var iconKind))
-        {
-            return DeviceIconCatalog.DefaultIconFileName;
-        }
-
-        return DeviceIconCatalog.NormalizeStoredKey(iconKind);
     }
 
 }
