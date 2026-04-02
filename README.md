@@ -64,4 +64,6 @@ Would you like me to adapt this into a more concise, product‑style description
 
 Result: `installer-output\SoundSwitcher-Setup.exe` (source files — `bin\Release\net8.0-windows\win-x64\publish\`, see `installer.iss`).
 
+## Download
+
 Release file: [Win64 installer](https://github.com/AlexanderBykovskiy/sound-switcher/tree/main/installer-output)
