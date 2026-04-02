@@ -15,11 +15,11 @@ Once installed, the application is ready to run (you can add it to the startup q
 
 A tray icon will appear, showing which audio device is currently active.
 
-![Tray icon — active output device](Assets/readme/tray.png)
+![Tray icon — active output device](https://github.com/AlexanderBykovskiy/sound-switcher/blob/main/Assets/readme/image-1.jpg?raw=true)
 
 But the application needs to be configured. To do this, right‑click the tray icon and select Settings.
 
-![Settings — devices and icons](Assets/readme/settings.png)
+![Settings — devices and icons](https://github.com/AlexanderBykovskiy/sound-switcher/blob/main/Assets/readme/image-2.jpg?raw=true)
 
 The settings window is very simple: you can check the devices that should be included in switching, and also assign an icon to each one (so it’s easy to recognize them). Click Save, and now each click on the tray icon will cycle through your chosen audio sources.
 
