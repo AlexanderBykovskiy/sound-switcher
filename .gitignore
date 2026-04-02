@@ -34,3 +34,5 @@ packages/
 # OS artifacts
 Thumbs.db
 Desktop.ini
+
+build.md

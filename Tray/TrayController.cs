@@ -12,6 +12,10 @@ namespace SoundSwitcher.Tray;
 
 public sealed class TrayController : IDisposable
 {
+    private const int TrayIconSizePx = 32;
+    /// <summary>Скругление углов HICON в трее (пиксели при размере 32×32).</summary>
+    private const int TrayIconCornerRadiusPx = 5;
+
     private readonly AudioDeviceService _audioDeviceService;
     private readonly SettingsService _settingsService;
     private readonly Forms.NotifyIcon _notifyIcon;
@@ -232,11 +236,21 @@ public sealed class TrayController : IDisposable
 
     private static Icon CreateTrayIcon(string deviceIconKind)
     {
-        using var bitmap = new Bitmap(32, 32);
+        using var bitmap = new Bitmap(TrayIconSizePx, TrayIconSizePx);
         using var graphics = Graphics.FromImage(bitmap);
         graphics.Clear(Color.Transparent);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        DrawDeviceIcon(graphics, deviceIconKind);
+        var bounds = new Rectangle(0, 0, TrayIconSizePx, TrayIconSizePx);
+        using var clip = CreateRoundedRectPath(bounds, TrayIconCornerRadiusPx);
+        graphics.SetClip(clip);
+        try
+        {
+            DrawDeviceIcon(graphics, deviceIconKind);
+        }
+        finally
+        {
+            graphics.ResetClip();
+        }
 
         var hIcon = bitmap.GetHicon();
         try
@@ -269,7 +283,10 @@ public sealed class TrayController : IDisposable
             graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
             graphics.CompositingQuality = CompositingQuality.HighQuality;
             graphics.CompositingMode = CompositingMode.SourceOver;
-            DeviceIconPngDrawing.DrawDevicePngOnto(graphics, image, new RectangleF(0f, 0f, 32f, 32f));
+            DeviceIconPngDrawing.DrawDevicePngOnto(
+                graphics,
+                image,
+                new RectangleF(0f, 0f, TrayIconSizePx, TrayIconSizePx));
         }
         catch
         {
@@ -278,6 +295,19 @@ public sealed class TrayController : IDisposable
                 DrawDeviceIcon(graphics, DeviceIconCatalog.DefaultIconFileName);
             }
         }
+    }
+
+    private static GraphicsPath CreateRoundedRectPath(Rectangle rect, int radius)
+    {
+        var d = Math.Min(radius * 2, Math.Min(rect.Width, rect.Height));
+        var path = new GraphicsPath();
+        path.StartFigure();
+        path.AddArc(rect.X, rect.Y, d, d, 180, 90);
+        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90);
+        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     [DllImport("user32.dll", SetLastError = true)]
