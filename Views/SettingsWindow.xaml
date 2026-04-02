@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Sound Switcher - Settings"
+        Icon="pack://application:,,,/Assets/app-icon.png"
         Height="300"
         Width="620"
         WindowStartupLocation="CenterScreen"
