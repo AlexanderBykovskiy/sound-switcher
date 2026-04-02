@@ -11,5 +11,8 @@
 
   <ItemGroup>
     <Resource Include="Assets\app-icon.png" />
+    <Content Include="Assets\DeviceIcons\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

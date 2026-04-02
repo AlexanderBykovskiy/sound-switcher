@@ -33,12 +33,6 @@ public sealed class SettingsService
             return new AppSettings
             {
                 IncludedDeviceIds = settings.IncludedDeviceIds ?? [],
-                TrayBackgroundShape = string.IsNullOrWhiteSpace(settings.TrayBackgroundShape)
-                    ? Models.TrayIconKinds.BackgroundCrop11
-                    : settings.TrayBackgroundShape,
-                TrayBackgroundColorHex = string.IsNullOrWhiteSpace(settings.TrayBackgroundColorHex)
-                    ? "#000000"
-                    : settings.TrayBackgroundColorHex,
                 DeviceIconById = settings.DeviceIconById ?? new(StringComparer.OrdinalIgnoreCase)
             };
         }
